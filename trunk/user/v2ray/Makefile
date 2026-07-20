@@ -1,32 +1,30 @@
-V2RAY_VERSION := 5.51.2
-V2RAY_URL := https://codeload.github.com/v2fly/v2ray-core/tar.gz/v$(V2RAY_VERSION)
-V2RAY_DIR = "v2ray-core/core/main"
+include $(ROOTDIR)/rules.mk
 
-THISDIR = $(shell pwd)
+PKG_NAME:=v2ray
+PKG_VERSION:=5.24.0
 
-all: download build_extract build
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://codeload.github.com/v2fly/v2ray-core/tar.gz/v$(PKG_VERSION)?
+PKG_HASH:=1b434135924f324dc3f6cf415b9109596a7b356ffcb7948b4e206b50a5e41a88
 
-download:
-	( if [ ! -f $(THISDIR)/v2ray-core-$(V2RAY_VERSION).tar.gz ]; then \
-	curl --create-dirs -L $(V2RAY_URL) -o $(THISDIR)/v2ray-core-$(V2RAY_VERSION).tar.gz ; \
-	fi )
+PKG_BUILD_DIR:=$(BUILD_DIR)/v2ray-core-$(PKG_VERSION)
 
-build_extract:
-	mkdir -p $(THISDIR)/v2ray-core
-	mkdir -p $(THISDIR)/bin
-	( if [ ! -d $(THISDIR)/v2ray-core/core ]; then \
-	tar zxf $(THISDIR)/v2ray-core-$(V2RAY_VERSION).tar.gz -C $(THISDIR)/v2ray-core ; \
-	mv $(THISDIR)/v2ray-core/v2ray-core-$(V2RAY_VERSION) $(THISDIR)/v2ray-core/core ; \
-	fi )
+include $(INCLUDE_DIR)/package.mk
 
-build:
-	( cd $(THISDIR)/$(V2RAY_DIR); \
-	GOOS=linux GOARCH=mipsle CGO_ENABLED=0 go build -o $(THISDIR)/bin/v2ray -trimpath -ldflags "-s -w -buildid="; \
+define Build/Configure
+endef
+
+define Build/Compile
+	(cd $(PKG_BUILD_DIR); \
+		GOOS=linux GOARCH=mipsle CGO_ENABLED=0 \
+		go build -v -o v2ray \
+		-trimpath -ldflags "-s -w -buildid=" \
+		./main; \
 	)
+endef
 
-clean:
-	rm -rf $(THISDIR)/v2ray-core
-	rm -rf $(THISDIR)/bin
+$(eval $(call BuildPackage,v2ray))
 
 romfs:
-	$(ROMFSINST) -p +x $(THISDIR)/bin/v2ray /usr/bin/v2ray
+	$(INSTALL_DIR) $(ROMFSDIR)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/v2ray $(ROMFSDIR)/usr/bin/v2ray
